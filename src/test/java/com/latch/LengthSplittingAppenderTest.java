@@ -1,5 +1,6 @@
 package com.latch;
 
+import ch.qos.logback.classic.LoggerContext;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 
@@ -13,6 +14,7 @@ import java.util.List;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.LoggingEvent;
+import org.slf4j.LoggerFactory;
 
 public class LengthSplittingAppenderTest {
 
@@ -45,8 +47,11 @@ public class LengthSplittingAppenderTest {
         longLoggingEvent.setMessage(longMessage);
         loremLoggingEvent.setMessage(loremMessage);
 
+        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+        context.putProperty("max-message-length", Integer.toString(MAX_MESSAGE_LENGTH));
         splitter = new LengthSplittingAppender();
-        splitter.setMaxMessageLength(MAX_MESSAGE_LENGTH);
+
+        Assert.assertEquals(MAX_MESSAGE_LENGTH, splitter.getMaxMessageLength());
     }
 
     @Test

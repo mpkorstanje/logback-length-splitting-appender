@@ -1,18 +1,17 @@
 package com.latch;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.LoggingEvent;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
-
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.slf4j.Marker;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.classic.spi.LoggingEvent;
 
 public class LengthSplittingAppender extends SplittingAppenderBase<ILoggingEvent> {
 
@@ -21,26 +20,20 @@ public class LengthSplittingAppender extends SplittingAppenderBase<ILoggingEvent
     private static final String MESSAGE_LENGTH_KEY = "max-message-length";
     private static final String SEQUENCE_KEY = "sequence-key";
 
-    private int maxMessageLength;
-    private String sequenceKey;
+    private final int maxMessageLength;
+    private final String sequenceKey;
+    private final Splitter splitter;
 
-    public LengthSplittingAppender() {
-        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-        this.setContext(loggerContext);
+    LengthSplittingAppender() {
+        this.setContext((LoggerContext) LoggerFactory.getILoggerFactory());
 
-        try {
-            maxMessageLength = Integer.parseInt(getPropertyOrDefault(MESSAGE_LENGTH_KEY,
+        this.maxMessageLength = Integer.parseInt(
+                getPropertyOrDefault(
+                    MESSAGE_LENGTH_KEY,
                     Integer.toString(DEFAULT_MAX_LENGTH)));
-        } catch (NumberFormatException e) {
-            addError(
-                    String.format(
-                            "Invalid integer provided, reverting to default size %s",
-                            DEFAULT_MAX_LENGTH),
-                    e);
-            maxMessageLength = DEFAULT_MAX_LENGTH;
-        }
-
-        sequenceKey = getPropertyOrDefault(SEQUENCE_KEY, DEFAULT_SEQUENCE_IDENTIFIER);
+        this.sequenceKey =
+                getPropertyOrDefault(SEQUENCE_KEY, DEFAULT_SEQUENCE_IDENTIFIER);
+        this.splitter = Splitter.fixedLength(maxMessageLength);
     }
 
     @Override
@@ -50,12 +43,9 @@ public class LengthSplittingAppender extends SplittingAppenderBase<ILoggingEvent
 
     @Override
     public List<ILoggingEvent> split(ILoggingEvent event) {
-        List<String> logMessages = Lists.newArrayList(
-                Splitter.fixedLength(maxMessageLength)
-                        .split(event.getFormattedMessage()));
+        List<String> logMessages = Lists.newArrayList(splitter.split(event.getFormattedMessage()));
 
         List<ILoggingEvent> splitLogEvents = new ArrayList<>(logMessages.size());
-
         for (int i = 0; i < logMessages.size(); i++) {
 
             MDC.put(sequenceKey, Integer.toString(i));
@@ -68,10 +58,6 @@ public class LengthSplittingAppender extends SplittingAppenderBase<ILoggingEvent
         }
 
         return splitLogEvents;
-    }
-
-    public void setMaxMessageLength(int maxMessageLength) {
-        this.maxMessageLength = maxMessageLength;
     }
 
     private LoggingEvent cloneLogEvent(ILoggingEvent event) {
@@ -96,17 +82,21 @@ public class LengthSplittingAppender extends SplittingAppenderBase<ILoggingEvent
     }
 
     private String getPropertyOrDefault(String propertyKey, String defaultValue) {
-        try {
-            return getContext().getProperty(propertyKey);
-        }
-        catch (Exception e) {
+        String property = getContext().getProperty(propertyKey);
+        if (property == null) {
             addWarn(
                     String.format(
                             "Could not load %s, reverting to default size %s",
                             propertyKey,
-                            defaultValue),
-                    e);
+                            defaultValue)
+            );
             return defaultValue;
         }
+        return property;
+    }
+
+    @VisibleForTesting
+    int getMaxMessageLength() {
+        return maxMessageLength;
     }
 }
