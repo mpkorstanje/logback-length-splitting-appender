@@ -5,7 +5,6 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -21,91 +20,79 @@ public class LengthSplittingAppenderTest {
     private static final int MAX_MESSAGE_LENGTH = 50;
     private static final String BASE_STRING = "0123456789";
     private static final String LOREM_PATH = "logging_message.txt";
+    private static final String MESSAGE_LENGTH_KEY = "max-message-length";
 
-    private LoggingEvent shortLoggingEvent;
-    private LoggingEvent equalLoggingEvent;
-    private LoggingEvent longLoggingEvent;
+    private final LengthSplittingAppender splitter;
 
-    private LoggingEvent loremLoggingEvent;
-
-    private LengthSplittingAppender splitter;
-
-    @Before
-    public void init() throws IOException {
-        String shortMessage = String.join("", Collections.nCopies(1, BASE_STRING));
-        String equalMessage = String.join("", Collections.nCopies(5, BASE_STRING));
-        String longMessage = String.join("", Collections.nCopies(50, BASE_STRING));
-        String loremMessage = readTextFromResource(LOREM_PATH);
-
-        shortLoggingEvent = new LoggingEvent();
-        equalLoggingEvent = new LoggingEvent();
-        longLoggingEvent = new LoggingEvent();
-        loremLoggingEvent = new LoggingEvent();
-
-        shortLoggingEvent.setMessage(shortMessage);
-        equalLoggingEvent.setMessage(equalMessage);
-        longLoggingEvent.setMessage(longMessage);
-        loremLoggingEvent.setMessage(loremMessage);
-
+    public LengthSplittingAppenderTest() {
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        context.putProperty("max-message-length", Integer.toString(MAX_MESSAGE_LENGTH));
-        splitter = new LengthSplittingAppender();
+        context.putProperty(MESSAGE_LENGTH_KEY, Integer.toString(MAX_MESSAGE_LENGTH));
 
+        this.splitter = new LengthSplittingAppender();
         Assert.assertEquals(MAX_MESSAGE_LENGTH, splitter.getMaxMessageLength());
     }
 
     @Test
-    public void testShouldSplit() {
-        Assert.assertFalse(splitter.shouldSplit(shortLoggingEvent));
-        Assert.assertFalse(splitter.shouldSplit(equalLoggingEvent));
-        Assert.assertTrue(splitter.shouldSplit(longLoggingEvent));
-        Assert.assertTrue(splitter.shouldSplit(loremLoggingEvent));
+    public void testEmpty() {
+        LoggingEvent event = new LoggingEvent();
+        event.setMessage("");
+        Assert.assertFalse(splitter.shouldSplit(event));
     }
 
     @Test
-    public void testSplitOfMaxMessageMultiple() {
-        List<ILoggingEvent> splitEvents = splitter.split(longLoggingEvent);
-        int logMessageLength = longLoggingEvent.getFormattedMessage().length();
-        int expectedEventLength = logMessageLength / MAX_MESSAGE_LENGTH +
-                ((logMessageLength % MAX_MESSAGE_LENGTH == 0) ? 0 : 1);
-
-        Assert.assertEquals(
-                expectedEventLength,
-                splitEvents.size());
-
-        for (ILoggingEvent splitEvent : splitEvents) {
-            String expectedSplitMessage = String.join("", Collections.nCopies(
-                    MAX_MESSAGE_LENGTH / expectedEventLength,
-                    BASE_STRING));
-
-            Assert.assertEquals(
-                    expectedSplitMessage,
-                    splitEvent.getMessage());
-        }
-
-        Assert.assertEquals(
-                longLoggingEvent.getFormattedMessage(),
-                recreateMessage(splitEvents)
-        );
+    public void testLessThanMax() {
+        LoggingEvent event = new LoggingEvent();
+        event.setMessage(
+                String.join("", Collections.nCopies(1, BASE_STRING)));
+        Assert.assertFalse(splitter.shouldSplit(event));
     }
 
     @Test
-    public void testSplitOfLorem() {
-        List<ILoggingEvent> splitEvents = splitter.split(loremLoggingEvent);
-        int logMessageLength = loremLoggingEvent.getFormattedMessage().length();
+    public void testEqualToMax() {
+        LoggingEvent event = new LoggingEvent();
+        event.setMessage(
+                String.join("", Collections.nCopies(5, BASE_STRING)));
+        Assert.assertEquals(MAX_MESSAGE_LENGTH, 5 * BASE_STRING.length());
+        Assert.assertFalse(splitter.shouldSplit(event));
+    }
 
-        int expectedEventLength =
-                logMessageLength / MAX_MESSAGE_LENGTH +
-                        ((logMessageLength % MAX_MESSAGE_LENGTH == 0) ? 0 : 1);
+    @Test
+    public void testGreaterThanMaxAndMultipleOfMax() {
+        LoggingEvent event = new LoggingEvent();
+        event.setMessage(
+                String.join("", Collections.nCopies(50, BASE_STRING)));
+        Assert.assertTrue(splitter.shouldSplit(event));
+
+        List<ILoggingEvent> splitEvents = splitter.split(event);
 
         Assert.assertEquals(
-                expectedEventLength,
+                event.getFormattedMessage().length() / MAX_MESSAGE_LENGTH,
                 splitEvents.size());
+    }
+
+    @Test
+    public void testGreaterThanMaxAndNotMultipleOfMax() {
+        LoggingEvent event = new LoggingEvent();
+        event.setMessage(
+                String.join("", Collections.nCopies(51, BASE_STRING)));
+        Assert.assertTrue(splitter.shouldSplit(event));
+
+        List<ILoggingEvent> splitEvents = splitter.split(event);
 
         Assert.assertEquals(
-                loremLoggingEvent.getFormattedMessage(),
-                recreateMessage(splitEvents)
-        );
+                event.getFormattedMessage().length() / MAX_MESSAGE_LENGTH + 1,
+                splitEvents.size());
+    }
+
+    @Test
+    public void testSplitIntegrity() throws IOException {
+        String loremIpsum = readTextFromResource(LOREM_PATH);
+        LoggingEvent event = new LoggingEvent();
+        event.setMessage(loremIpsum);
+
+        List<ILoggingEvent> splitEvents = splitter.split(event);
+
+        Assert.assertEquals(event.getFormattedMessage(), recreateMessage(splitEvents));
     }
 
     private String recreateMessage(List<ILoggingEvent> splitEvents) {

@@ -11,7 +11,7 @@ import ch.qos.logback.core.spi.AppenderAttachableImpl;
 public abstract class SplittingAppenderBase<E> extends UnsynchronizedAppenderBase<E>
         implements AppenderAttachable<E> {
 
-    private final AppenderAttachableImpl<E> aai = new AppenderAttachableImpl<E>();
+    private final AppenderAttachableImpl<E> aai = new AppenderAttachableImpl<>();
 
     protected abstract List<E> split(E event);
 

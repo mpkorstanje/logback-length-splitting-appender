@@ -8,7 +8,6 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-import org.slf4j.Marker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +49,7 @@ public class LengthSplittingAppender extends SplittingAppenderBase<ILoggingEvent
 
             MDC.put(sequenceKey, Integer.toString(i));
 
-            LoggingEvent loggingEventPartition = cloneLogEvent(event);
+            LoggingEvent loggingEventPartition = LoggingEventCloner.clone(event);
             loggingEventPartition.setMessage(logMessages.get(i));
 
             splitLogEvents.add(loggingEventPartition);
@@ -60,26 +59,6 @@ public class LengthSplittingAppender extends SplittingAppenderBase<ILoggingEvent
         return splitLogEvents;
     }
 
-    private LoggingEvent cloneLogEvent(ILoggingEvent event) {
-        LoggingEvent logEventPartition = new LoggingEvent();
-
-        logEventPartition.setLevel(event.getLevel());
-        logEventPartition.setLoggerName(event.getLoggerName());
-        logEventPartition.setTimeStamp(event.getTimeStamp());
-        logEventPartition.setLoggerContextRemoteView(event.getLoggerContextVO());
-        logEventPartition.setThreadName(event.getThreadName());
-
-        Marker eventMarker = event.getMarker();
-        if (eventMarker != null) {
-            logEventPartition.setMarker(eventMarker);
-        }
-
-        if (event.hasCallerData()) {
-            logEventPartition.setCallerData(event.getCallerData());
-        }
-
-        return logEventPartition;
-    }
 
     private String getPropertyOrDefault(String propertyKey, String defaultValue) {
         String property = getContext().getProperty(propertyKey);
