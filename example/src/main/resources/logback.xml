@@ -1,0 +1,17 @@
+<configuration debug="true">
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} %X{seq} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="SPLITTER" class="com.latch.LengthSplittingAppender">
+        <appender-ref ref="STDOUT"/>
+        <maxLength>5</maxLength>
+        <sequenceKey>seq</sequenceKey>
+    </appender>
+
+    <root level="debug">
+        <appender-ref ref="SPLITTER" />
+    </root>
+</configuration>

@@ -1,9 +1,9 @@
 package com.latch;
 
-import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.LoggingEvent;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -11,25 +11,19 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.classic.spi.LoggingEvent;
-import org.slf4j.LoggerFactory;
-
 public class LengthSplittingAppenderTest {
 
     private static final int MAX_MESSAGE_LENGTH = 50;
     private static final String BASE_STRING = "0123456789";
     private static final String LOREM_PATH = "logging_message.txt";
-    private static final String MESSAGE_LENGTH_KEY = "max-message-length";
 
     private final LengthSplittingAppender splitter;
 
     public LengthSplittingAppenderTest() {
-        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        context.putProperty(MESSAGE_LENGTH_KEY, Integer.toString(MAX_MESSAGE_LENGTH));
-
         this.splitter = new LengthSplittingAppender();
-        Assert.assertEquals(MAX_MESSAGE_LENGTH, splitter.getMaxMessageLength());
+        splitter.setMaxLength(MAX_MESSAGE_LENGTH);
+        splitter.setSequenceKey("seq");
+        Assert.assertEquals(MAX_MESSAGE_LENGTH, splitter.getMaxLength());
     }
 
     @Test

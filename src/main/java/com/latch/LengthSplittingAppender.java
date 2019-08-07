@@ -1,43 +1,42 @@
 package com.latch;
 
-import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.LoggingEvent;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class LengthSplittingAppender extends SplittingAppenderBase<ILoggingEvent> {
 
-    private static final int DEFAULT_MAX_LENGTH = 50000;
-    private static final String DEFAULT_SEQUENCE_IDENTIFIER = "seq";
-    private static final String MESSAGE_LENGTH_KEY = "max-message-length";
-    private static final String SEQUENCE_KEY = "sequence-key";
+    private int maxLength;
+    private String sequenceKey;
 
-    private final int maxMessageLength;
-    private final String sequenceKey;
-    private final Splitter splitter;
+    private Splitter splitter;
 
-    LengthSplittingAppender() {
-        this.setContext((LoggerContext) LoggerFactory.getILoggerFactory());
+    public int getMaxLength() {
+        return maxLength;
+    }
 
-        this.maxMessageLength = Integer.parseInt(
-                getPropertyOrDefault(
-                    MESSAGE_LENGTH_KEY,
-                    Integer.toString(DEFAULT_MAX_LENGTH)));
-        this.sequenceKey =
-                getPropertyOrDefault(SEQUENCE_KEY, DEFAULT_SEQUENCE_IDENTIFIER);
-        this.splitter = Splitter.fixedLength(maxMessageLength);
+    public void setMaxLength(int maxLength) {
+        this.maxLength = maxLength;
+        splitter = Splitter.fixedLength(maxLength);
+    }
+
+    public String getSequenceKey() {
+        return sequenceKey;
+    }
+
+    public void setSequenceKey(String sequenceKey) {
+        this.sequenceKey = sequenceKey;
     }
 
     @Override
     public boolean shouldSplit(ILoggingEvent event) {
-        return event.getFormattedMessage().length() > maxMessageLength;
+        return event.getFormattedMessage().length() > maxLength;
     }
 
     @Override
@@ -47,35 +46,15 @@ public class LengthSplittingAppender extends SplittingAppenderBase<ILoggingEvent
         List<ILoggingEvent> splitLogEvents = new ArrayList<>(logMessages.size());
         for (int i = 0; i < logMessages.size(); i++) {
 
-            MDC.put(sequenceKey, Integer.toString(i));
+            LoggingEvent partition = LoggingEventCloner.clone(event);
+            Map<String, String> seqMDCPropertyMap = new HashMap<>(event.getMDCPropertyMap());
+            seqMDCPropertyMap.put(sequenceKey, Integer.toString(i));
+            partition.setMDCPropertyMap(seqMDCPropertyMap);
+            partition.setMessage(logMessages.get(i));
 
-            LoggingEvent loggingEventPartition = LoggingEventCloner.clone(event);
-            loggingEventPartition.setMessage(logMessages.get(i));
-
-            splitLogEvents.add(loggingEventPartition);
-            MDC.clear();
+            splitLogEvents.add(partition);
         }
 
         return splitLogEvents;
-    }
-
-
-    private String getPropertyOrDefault(String propertyKey, String defaultValue) {
-        String property = getContext().getProperty(propertyKey);
-        if (property == null) {
-            addWarn(
-                    String.format(
-                            "Could not load %s, reverting to default size %s",
-                            propertyKey,
-                            defaultValue)
-            );
-            return defaultValue;
-        }
-        return property;
-    }
-
-    @VisibleForTesting
-    int getMaxMessageLength() {
-        return maxMessageLength;
     }
 }
