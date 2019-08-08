@@ -2,14 +2,13 @@ package com.latch;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.LoggingEvent;
-import com.google.common.base.Charsets;
-import com.google.common.io.Resources;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class LengthSplittingAppenderTest {
 
@@ -79,7 +78,7 @@ public class LengthSplittingAppenderTest {
     }
 
     @Test
-    public void testSplitIntegrity() throws IOException {
+    public void testSplitIntegrity() {
         String loremIpsum = readTextFromResource(LOREM_PATH);
         LoggingEvent event = new LoggingEvent();
         event.setMessage(loremIpsum);
@@ -99,7 +98,9 @@ public class LengthSplittingAppenderTest {
         return sb.toString();
     }
 
-    private String readTextFromResource(String path) throws IOException {
-        return Resources.toString(Resources.getResource(path), Charsets.UTF_8);
+    private String readTextFromResource(String fileName) {
+        InputStream is = getClass().getClassLoader().getResourceAsStream(fileName);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        return reader.lines().collect(Collectors.joining(""));
     }
 }

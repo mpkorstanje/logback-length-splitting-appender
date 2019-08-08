@@ -11,8 +11,9 @@ It provides the following configurable properties:
 
 ## Usage
 
-Import Logback classic, Google Guava, and this appender.
+Import Logback classic and this appender.
 ```
+  </dependencies>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
@@ -20,15 +21,9 @@ Import Logback classic, Google Guava, and this appender.
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>28.0-jre</version>
-    </dependency>
-  </dependencies>
-    <dependency>
       <groupId>com.latch</groupId>
       <artifactId>logback-length-splitting-appender</artifactId>
-      <version>0.3.0</version>
+      <version>0.4.0</version>
     </dependency>
   </dependencies>
 ```
