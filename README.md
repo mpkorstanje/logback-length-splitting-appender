@@ -1,13 +1,19 @@
 # logback-length-splitting-appender
 split long Logback logs by a configurable length
 
-## Background
+## Features 
 
-This Logback Appender is useful for avoiding truncated logs in 3rd party systems like Datadog and AWS Cloudwatch.
+The `LengthSplittingAppender` [Logback Appender](https://logback.qos.ch/manual/appenders.html) 
+is useful for avoiding truncated logs in 3rd-party systems such as Datadog and AWS Cloudwatch.
 
 It provides the following configurable properties:
-* max length (only applies to log message, not markers)
-* sequence key (useful for reconstructing messages in systems like MapReduce)
+* a log message chunk size
+* a sequence number key to inject within the [Mapped Diagnostic Context (MDC)](https://logback.qos.ch/manual/mdc.html)
+
+Sequence numbers track the ordinal value of each sub-message split from a parent message. The
+can be useful for sorting / auditing, as well as reconstructing messages in systems like MapReduce.
+
+The partitioned log entries will carry over the SLF4J `Markers` from their parent message. 
 
 ## Usage
 
@@ -50,3 +56,9 @@ Point the splitting appender at your existing appenders with encoders within you
 ```
 
 In this example, the `maxLength` ensures that no log message body exceeds 5 characters (10 bytes).
+
+Note that the `sequenceKey` set to `seq` is injected into the `STDOUT` encoder. 
+
+## Contributing
+
+See the `CONTRIBUTING.md`.
