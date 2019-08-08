@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.latch</groupId>
   <artifactId>logback-length-splitting-appender</artifactId>
-  <version>0.4.0</version>
+  <version>0.4.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>length-splitting-appender</name>
@@ -46,7 +46,7 @@
     <connection>scm:git:git@github.com:Latch/logback-length-splitting-appender.git</connection>
     <developerConnection>scm:git:git@github.com:Latch/logback-length-splitting-appender.git</developerConnection>
     <url>https://github.com/Latch/logback-length-splitting-appender</url>
-    <tag>release-0.4.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <distributionManagement>
